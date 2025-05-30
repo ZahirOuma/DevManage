@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Circle -->
+    <circle cx="512" cy="512" r="512" fill="#34A853"/>
+    
+    <!-- Project Management Icon (Simplified) -->
+    <g transform="translate(212, 212) scale(0.6)">
+        <!-- Main Board/Task List -->
+        <rect x="100" y="100" width="600" height="400" rx="20" fill="white"/>
+        
+        <!-- Task Items -->
+        <rect x="150" y="150" width="500" height="50" rx="5" fill="#FBCD0F"/>
+        <rect x="150" y="230" width="500" height="50" rx="5" fill="#FBCD0F"/>
+        <rect x="150" y="310" width="350" height="50" rx="5" fill="#FBCD0F"/>
+        
+        <!-- Progress/Checkmark -->
+        <circle cx="600" cy="335" r="25" fill="#4285F4"/>
+        <path d="M585 335 L600 350 L630 310" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        
+        <!-- Gear/Settings -->
+        <circle cx="250" cy="450" r="40" fill="#EA4335"/>
+        <path d="M250 410 L265 440 L295 450 L265 460 L250 490 L235 460 L205 450 L235 440 Z" fill="white"/>
+        
+        <!-- Graph/Analytics -->
+        <rect x="400" y="380" width="50" height="120" fill="#EA4335"/>
+        <rect x="500" y="400" width="50" height="100" fill="#FBCD0F"/>
+        <rect x="600" y="420" width="50" height="80" fill="#34A853"/>
+
+    </g>
+</svg> 
