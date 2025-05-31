@@ -50,27 +50,56 @@ const CreateTaskScreen = ({ route, navigation }) => {
       });
 
       if (result.type === 'success') {
-        setAttachments([...attachments, result]);
+        console.log('Document sélectionné:', result);
+        const newAttachment = {
+          uri: result.uri,
+          name: result.name || 'document',
+          type: result.mimeType || 'application/octet-stream',
+          size: result.size,
+        };
+        console.log('Nouvelle pièce jointe:', newAttachment);
+        setAttachments(prevAttachments => [...prevAttachments, newAttachment]);
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Échec du choix du document');
+      console.error('Erreur lors de la sélection du document:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner le document');
     }
   };
 
   const handlePickImage = async () => {
     try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert('Permission requise', 'Nous avons besoin de votre permission pour accéder à la galerie');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 1,
+        base64: false,
       });
 
-      if (!result.canceled) {
-        setAttachments([...attachments, result.assets[0]]);
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newAttachment = {
+          uri: result.assets[0].uri,
+          name: result.assets[0].fileName || 'image.jpg',
+          type: 'image/jpeg',
+        };
+        setAttachments([...attachments, newAttachment]);
       }
     } catch (error) {
-      Alert.alert('Erreur', 'Échec du choix de l\'image');
+      console.error('Erreur lors de la sélection de l\'image:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
     }
+  };
+
+  const handleRemoveAttachment = (index) => {
+    const newAttachments = [...attachments];
+    newAttachments.splice(index, 1);
+    setAttachments(newAttachments);
   };
 
   const handleVoiceRecording = (recording) => {
@@ -315,7 +344,7 @@ const CreateTaskScreen = ({ route, navigation }) => {
                   onPress={handlePickDocument}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.attachmentButtonIcon}>📄</Text>
+                  <Ionicons name="document-outline" size={20} color="#fff" style={styles.attachmentButtonIcon} />
                   <Text style={styles.attachmentButtonText}>Document</Text>
                 </TouchableOpacity>
 
@@ -324,20 +353,38 @@ const CreateTaskScreen = ({ route, navigation }) => {
                   onPress={handlePickImage}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.attachmentButtonIcon}>🖼️</Text>
+                  <Ionicons name="image-outline" size={20} color="#fff" style={styles.attachmentButtonIcon} />
                   <Text style={styles.attachmentButtonText}>Image</Text>
                 </TouchableOpacity>
               </View>
 
               {attachments.length > 0 && (
                 <View style={styles.attachmentsList}>
-                  <Text style={styles.attachmentsTitle}>Fichiers ajoutés :</Text>
+                  <Text style={styles.attachmentsTitle}>Fichiers ajoutés ({attachments.length}) :</Text>
                   {attachments.map((attachment, index) => (
                     <View key={index} style={styles.attachmentItem}>
-                      <Text style={styles.attachmentIcon}>📎</Text>
-                      <Text style={styles.attachmentName}>
-                        {attachment.name || 'Image'}
-                      </Text>
+                      <Ionicons 
+                        name={attachment.type.startsWith('image/') ? 'image' : 'document'} 
+                        size={20} 
+                        color="#6366F1" 
+                        style={styles.attachmentIcon} 
+                      />
+                      <View style={styles.attachmentInfo}>
+                        <Text style={styles.attachmentName} numberOfLines={1}>
+                          {attachment.name || 'Document'}
+                        </Text>
+                        {attachment.size && (
+                          <Text style={styles.attachmentSize}>
+                            {(attachment.size / 1024).toFixed(1)} KB
+                          </Text>
+                        )}
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveAttachment(index)}
+                        style={styles.removeAttachmentButton}
+                      >
+                        <Ionicons name="close-circle" size={20} color="#EF4444" />
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </View>
@@ -525,7 +572,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   attachmentButtonIcon: {
-    fontSize: 18,
     marginRight: 8,
   },
   attachmentButtonText: {
@@ -555,14 +601,25 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   attachmentIcon: {
-    fontSize: 16,
     marginRight: 12,
+  },
+  attachmentInfo: {
+    flex: 1,
+    marginLeft: 8,
   },
   attachmentName: {
     fontSize: 14,
     color: '#374151',
     fontWeight: '500',
     flex: 1,
+  },
+  attachmentSize: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  removeAttachmentButton: {
+    padding: 4,
   },
   createButton: {
     backgroundColor: '#6366F1',
