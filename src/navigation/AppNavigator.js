@@ -64,7 +64,7 @@ const TasksStack = () => (
     />
     <Stack.Screen 
       name="CreateTask" 
-      component={AddTaskScreen}
+      component={CreateTaskScreen}
       options={{ 
         title: 'Create New Task',
         headerStyle: {

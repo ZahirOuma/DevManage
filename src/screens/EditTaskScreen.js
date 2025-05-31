@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -17,7 +18,12 @@ import { useAuth } from '../context/AuthContext';
 import { taskService } from '../services/taskService';
 import { projectService } from '../services/projectService';
 import { Ionicons } from '@expo/vector-icons';
-import VoiceRecorder from '../components/VoiceRecorder'; // Import du composant
+import VoiceRecorder from '../components/VoiceRecorder';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const EditTaskScreen = ({ route, navigation }) => {
   const { taskId } = route.params;
@@ -33,12 +39,15 @@ const EditTaskScreen = ({ route, navigation }) => {
     projectId: '',
   });
   const [projects, setProjects] = useState([]);
-  const [voiceNote, setVoiceNote] = useState(null); // État pour la note vocale
+  const [voiceNote, setVoiceNote] = useState(null);
+  const [attachments, setAttachments] = useState([]);
   const { user } = useAuth();
+  const [reminderEnabled, setReminderEnabled] = useState(false);
 
   useEffect(() => {
     loadTask();
     loadProjects();
+    checkReminderStatus();
   }, [taskId]);
 
   const loadTask = async () => {
@@ -54,8 +63,8 @@ const EditTaskScreen = ({ route, navigation }) => {
           dueDate: task.dueDate ? new Date(task.dueDate.seconds * 1000).toISOString().split('T')[0] : '',
           projectId: task.projectId || '',
         });
-        // Charger la note vocale existante
         setVoiceNote(task.voiceNote || null);
+        setAttachments(task.attachments || []);
       }
     } catch (error) {
       console.error('Error loading task:', error);
@@ -80,6 +89,293 @@ const EditTaskScreen = ({ route, navigation }) => {
     setVoiceNote(recording);
   };
 
+  const handlePickDocument = async () => {
+    try {
+      // Configuration du picker
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true
+      });
+
+      console.log('Résultat du picker:', result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedFile = result.assets[0];
+        
+        // Vérifier si le fichier existe
+        const fileInfo = await FileSystem.getInfoAsync(selectedFile.uri);
+        console.log('Info du fichier:', fileInfo);
+
+        if (!fileInfo.exists) {
+          Alert.alert('Erreur', 'Le fichier n\'a pas pu être copié');
+          return;
+        }
+
+        // Créer l'objet d'attachement avec toutes les informations nécessaires
+        const newAttachment = {
+          uri: selectedFile.uri,
+          name: selectedFile.name,
+          type: selectedFile.mimeType || 'application/octet-stream',
+          size: selectedFile.size
+        };
+
+        console.log('Nouvelle pièce jointe à ajouter:', newAttachment);
+
+        // Mettre à jour la liste des pièces jointes
+        setAttachments(currentAttachments => {
+          const updatedAttachments = [...currentAttachments, newAttachment];
+          console.log('Liste mise à jour des pièces jointes:', updatedAttachments);
+          return updatedAttachments;
+        });
+
+        // Confirmation visuelle
+        Alert.alert('Succès', 'Document ajouté avec succès');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sélection du document:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner le document');
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled) {
+        // Vérifier si l'image existe
+        const fileInfo = await FileSystem.getInfoAsync(result.assets[0].uri);
+        
+        if (!fileInfo.exists) {
+          Alert.alert('Erreur', 'L\'image n\'a pas pu être copiée');
+          return;
+        }
+
+        // Créer l'objet d'attachement
+        const newAttachment = {
+          uri: result.assets[0].uri,
+          name: result.assets[0].fileName || 'image.jpg',
+          type: 'image/jpeg',
+          size: result.assets[0].fileSize
+        };
+
+        // Mettre à jour la liste des pièces jointes
+        setAttachments(currentAttachments => {
+          const updatedAttachments = [...currentAttachments, newAttachment];
+          console.log('Liste mise à jour des pièces jointes:', updatedAttachments); // Debug log
+          return updatedAttachments;
+        });
+
+        // Confirmation visuelle
+        Alert.alert('Succès', 'Image ajoutée avec succès');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sélection de l\'image:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+    }
+  };
+
+  // Ajouter cette fonction pour déboguer l'état des pièces jointes
+  useEffect(() => {
+    console.log('État actuel des pièces jointes:', attachments);
+  }, [attachments]);
+
+  const handleRemoveAttachment = (index) => {
+    Alert.alert(
+      'Supprimer la pièce jointe',
+      'Voulez-vous vraiment supprimer cette pièce jointe ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: () => {
+            const newAttachments = [...attachments];
+            newAttachments.splice(index, 1);
+            setAttachments(newAttachments);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenAttachment = async (attachment) => {
+    try {
+      if (!attachment.uri) {
+        Alert.alert('Erreur', 'Le fichier n\'existe pas');
+        return;
+      }
+
+      // Vérifier si le fichier existe
+      const fileInfo = await FileSystem.getInfoAsync(attachment.uri);
+      
+      if (!fileInfo.exists) {
+        Alert.alert('Erreur', 'Le fichier n\'existe plus');
+        return;
+      }
+
+      if (Platform.OS === 'android') {
+        try {
+          // Créer un URI de contenu pour le fichier
+          const contentUri = await FileSystem.getContentUriAsync(attachment.uri);
+          console.log('URI de contenu créé:', contentUri);
+
+          // Créer l'URL avec le type MIME explicite
+          const mimeType = attachment.type || 'application/pdf';
+          const urlWithMime = `${contentUri}?type=${encodeURIComponent(mimeType)}`;
+          console.log('URL avec type MIME:', urlWithMime);
+
+          // Essayer d'ouvrir avec le type MIME
+          const canOpen = await Linking.canOpenURL(urlWithMime);
+          if (canOpen) {
+            await Linking.openURL(urlWithMime);
+          } else {
+            // Si ça ne marche pas, essayer avec un intent Android
+            const intentUrl = `intent://${contentUri}#Intent;scheme=content;type=${mimeType};end`;
+            const canOpenIntent = await Linking.canOpenURL(intentUrl);
+            
+            if (canOpenIntent) {
+              await Linking.openURL(intentUrl);
+            } else {
+              // Dernier recours : copier le fichier vers un emplacement accessible
+              const fileName = attachment.name || 'document.pdf';
+              const newUri = `${FileSystem.cacheDirectory}${fileName}`;
+              
+              await FileSystem.copyAsync({
+                from: attachment.uri,
+                to: newUri
+              });
+
+              const newContentUri = await FileSystem.getContentUriAsync(newUri);
+              const finalUrl = `${newContentUri}?type=${encodeURIComponent(mimeType)}`;
+              
+              await Linking.openURL(finalUrl);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'ouverture du fichier:', error);
+          Alert.alert(
+            'Erreur',
+            'Impossible d\'ouvrir le PDF. Veuillez réessayer.'
+          );
+        }
+      } else {
+        // Pour iOS, utiliser l'approche directe
+        const canOpen = await Linking.canOpenURL(attachment.uri);
+        if (canOpen) {
+          await Linking.openURL(attachment.uri);
+        } else {
+          Alert.alert(
+            'Erreur',
+            'Impossible d\'ouvrir le PDF. Veuillez vérifier que vous avez un lecteur PDF installé.'
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Erreur détaillée:', error);
+      Alert.alert(
+        'Erreur',
+        'Impossible d\'ouvrir le fichier. Erreur: ' + (error.message || 'inconnue')
+      );
+    }
+  };
+
+  // Fonction pour planifier un rappel
+  const scheduleReminder = async (dueDate) => {
+    try {
+      if (!dueDate) {
+        console.log('Pas de date d\'échéance spécifiée');
+        return;
+      }
+
+      const dueDateTime = new Date(dueDate);
+      const twoDaysBefore = new Date(dueDateTime);
+      twoDaysBefore.setDate(dueDateTime.getDate() - 2);
+
+      console.log('Date d\'échéance:', dueDateTime.toLocaleString());
+      console.log('Date du rappel (2 jours avant):', twoDaysBefore.toLocaleString());
+      console.log('Date actuelle:', new Date().toLocaleString());
+
+      // Vérifier si la date est dans le futur
+      if (twoDaysBefore > new Date()) {
+        const reminderData = {
+          taskId: taskId,
+          taskTitle: formData.title,
+          dueDate: dueDate,
+          reminderDate: twoDaysBefore.toISOString(),
+        };
+
+        console.log('Données du rappel à sauvegarder:', reminderData);
+
+        await AsyncStorage.setItem(
+          `task_reminder_${taskId}`,
+          JSON.stringify(reminderData)
+        );
+
+        // Vérifier que les données ont été sauvegardées
+        const savedData = await AsyncStorage.getItem(`task_reminder_${taskId}`);
+        console.log('Données sauvegardées:', savedData);
+
+        setReminderEnabled(true);
+        Alert.alert(
+          'Rappel configuré',
+          `Un rappel a été programmé pour le ${twoDaysBefore.toLocaleDateString()}`
+        );
+      } else {
+        console.log('La date du rappel est dans le passé');
+        Alert.alert(
+          'Date invalide',
+          'La date du rappel doit être dans le futur'
+        );
+      }
+    } catch (error) {
+      console.error('Erreur lors de la planification du rappel:', error);
+      Alert.alert('Erreur', 'Impossible de planifier le rappel');
+    }
+  };
+
+  // Fonction pour vérifier l'état actuel des rappels
+  const checkReminderStatus = async () => {
+    try {
+      const reminder = await AsyncStorage.getItem(`task_reminder_${taskId}`);
+      console.log('État actuel du rappel:', reminder);
+      
+      if (reminder) {
+        const reminderData = JSON.parse(reminder);
+        console.log('Données du rappel:', reminderData);
+        console.log('Date du rappel:', new Date(reminderData.reminderDate).toLocaleString());
+      }
+      
+      setReminderEnabled(!!reminder);
+    } catch (error) {
+      console.error('Erreur lors de la vérification du rappel:', error);
+    }
+  };
+
+  // Fonction pour annuler un rappel
+  const cancelReminder = async () => {
+    try {
+      const reminder = await AsyncStorage.getItem(`task_reminder_${taskId}`);
+      console.log('Rappel à annuler:', reminder);
+      
+      await AsyncStorage.removeItem(`task_reminder_${taskId}`);
+      
+      // Vérifier que le rappel a bien été supprimé
+      const checkReminder = await AsyncStorage.getItem(`task_reminder_${taskId}`);
+      console.log('Vérification après suppression:', checkReminder);
+      
+      setReminderEnabled(false);
+      Alert.alert('Rappel annulé', 'Le rappel a été supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'annulation du rappel:', error);
+      Alert.alert('Erreur', 'Impossible d\'annuler le rappel');
+    }
+  };
+
   const handleUpdateTask = async () => {
     if (!formData.title.trim()) {
       Alert.alert('Error', 'Please enter a task title');
@@ -94,12 +390,25 @@ const EditTaskScreen = ({ route, navigation }) => {
         status: formData.status,
         projectId: formData.projectId,
         dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
-        voiceNote: voiceNote, // Ajouter la note vocale
+        voiceNote: voiceNote,
+        attachments: attachments.map((attachment) => ({
+          uri: attachment.uri,
+          name: attachment.name || 'image.jpg',
+          type: attachment.type || 'image/jpeg',
+        })),
         updatedBy: user.uid,
         updatedAt: new Date(),
       };
 
       await taskService.updateTask(taskId, taskData);
+
+      // Gérer les rappels
+      if (formData.dueDate) {
+        await scheduleReminder(formData.dueDate);
+      } else {
+        await cancelReminder();
+      }
+
       Alert.alert('Success', 'Task updated successfully', [
         {
           text: 'OK',
@@ -271,6 +580,20 @@ const EditTaskScreen = ({ route, navigation }) => {
                   placeholderTextColor="#999"
                 />
               </View>
+              {formData.dueDate && (
+                <View style={styles.reminderInfo}>
+                  <Ionicons 
+                    name={reminderEnabled ? "alarm" : "alarm-outline"} 
+                    size={20} 
+                    color={reminderEnabled ? "#10B981" : "#6B7280"} 
+                  />
+                  <Text style={styles.reminderText}>
+                    {reminderEnabled 
+                      ? "Rappel programmé 2 jours avant l'échéance"
+                      : "Cliquez sur Mettre à jour pour activer le rappel"}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -291,6 +614,58 @@ const EditTaskScreen = ({ route, navigation }) => {
                   ))}
                 </Picker>
               </View>
+            </View>
+
+            <View style={styles.attachmentSection}>
+              <Text style={styles.sectionTitle}>
+                <Text style={styles.labelIcon}>📎</Text> Pièces jointes
+              </Text>
+              <View style={styles.attachmentButtons}>
+                <TouchableOpacity
+                  style={[styles.attachmentButton, styles.documentButton]}
+                  onPress={handlePickDocument}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.attachmentButtonIcon}>📄</Text>
+                  <Text style={styles.attachmentButtonText}>Document</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.attachmentButton, styles.imageButton]}
+                  onPress={handlePickImage}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.attachmentButtonIcon}>🖼️</Text>
+                  <Text style={styles.attachmentButtonText}>Image</Text>
+                </TouchableOpacity>
+              </View>
+
+              {attachments.length > 0 && (
+                <View style={styles.attachmentsList}>
+                  <Text style={styles.attachmentsTitle}>Fichiers ajoutés :</Text>
+                  {attachments.map((attachment, index) => (
+                    <View key={index} style={styles.attachmentItem}>
+                      <TouchableOpacity
+                        style={styles.attachmentContent}
+                        onPress={() => handleOpenAttachment(attachment)}
+                      >
+                        <Text style={styles.attachmentIcon}>
+                          {attachment.type?.startsWith('image/') ? '🖼️' : '📄'}
+                        </Text>
+                        <Text style={styles.attachmentName}>
+                          {attachment.name || 'Image'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.removeAttachmentButton}
+                        onPress={() => handleRemoveAttachment(index)}
+                      >
+                        <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
 
@@ -502,6 +877,102 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '700',
+  },
+  attachmentSection: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  attachmentButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  attachmentButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  documentButton: {
+    backgroundColor: '#EFF6FF',
+  },
+  imageButton: {
+    backgroundColor: '#F0FDF4',
+  },
+  attachmentButtonIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  attachmentButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  attachmentsList: {
+    marginTop: 12,
+  },
+  attachmentsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  attachmentContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  attachmentIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  attachmentName: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
+  },
+  removeAttachmentButton: {
+    padding: 4,
+  },
+  updateButtonDisabled: {
+    backgroundColor: '#E5E7EB',
+  },
+  updateButtonText: {
+    color: '#9CA3AF',
+  },
+  deleteButtonText: {
+    color: '#9CA3AF',
+  },
+  reminderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  reminderText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#6B7280',
   },
 });
 
