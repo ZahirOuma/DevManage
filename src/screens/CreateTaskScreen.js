@@ -18,6 +18,7 @@ import VoiceRecorder from '../components/VoiceRecorder';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
+import NotificationService from '../services/notificationService';
 
 const CreateTaskScreen = ({ route, navigation }) => {
   const [title, setTitle] = useState('');
@@ -41,6 +42,87 @@ const CreateTaskScreen = ({ route, navigation }) => {
       }
     };
   }, [user, sound]);
+
+  useEffect(() => {
+    setupNotifications();
+  }, []);
+
+  const setupNotifications = async () => {
+    const hasPermission = await NotificationService.requestPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission requise',
+        'Les notifications sont nécessaires pour vous rappeler des tâches à venir.'
+      );
+    }
+  };
+
+  const handleCreateTask = async () => {
+    if (!title.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer un titre pour la tâche');
+      return;
+    }
+
+    const finalProjectId = projectId || selectedProjectId;
+    if (!finalProjectId) {
+      Alert.alert('Erreur', 'Veuillez sélectionner un projet');
+      return;
+    }
+
+    try {
+      const taskData = {
+        title: title.trim(),
+        description: description.trim(),
+        status: 'todo',
+        createdBy: user.uid,
+        attachments: attachments.map((attachment) => ({
+          uri: attachment.uri,
+          name: attachment.name || 'image.jpg',
+          type: attachment.mimeType || 'image/jpeg',
+        })),
+        voiceNote: voiceNote ? {
+          uri: voiceNote.uri,
+          duration: voiceNote.duration,
+          fileName: voiceNote.fileName,
+          createdAt: voiceNote.createdAt,
+        } : null,
+        createdAt: new Date(),
+      };
+
+      if (finalProjectId) {
+        taskData.projectId = finalProjectId;
+      }
+
+      // Créer la tâche
+      const createdTask = await taskService.createTask(taskData);
+
+      // Programmer le rappel si une date d'échéance est définie
+      if (taskData.dueDate) {
+        await NotificationService.scheduleTaskReminder(
+          createdTask.id,
+          taskData.title,
+          taskData.dueDate
+        );
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Erreur', `Échec de la création de la tâche\n${error?.message || error}`);
+    }
+  };
+
+  // Fonction pour tester les notifications
+  const testNotification = async () => {
+    try {
+      const testDate = await NotificationService.scheduleTestNotification();
+      Alert.alert(
+        'Notification de test programmée',
+        `Une notification de test sera envoyée le ${testDate.toLocaleDateString()} à ${testDate.toLocaleTimeString()}`
+      );
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de programmer la notification de test');
+    }
+  };
 
   const handlePickDocument = async () => {
     try {
@@ -175,49 +257,6 @@ const CreateTaskScreen = ({ route, navigation }) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleCreateTask = async () => {
-    if (!title.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer un titre pour la tâche');
-      return;
-    }
-
-    const finalProjectId = projectId || selectedProjectId;
-    if (!finalProjectId) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un projet');
-      return;
-    }
-
-    try {
-      const taskData = {
-        title: title.trim(),
-        description: description.trim(),
-        status: 'todo',
-        createdBy: user.uid,
-        attachments: attachments.map((attachment) => ({
-          uri: attachment.uri,
-          name: attachment.name || 'image.jpg',
-          type: attachment.mimeType || 'image/jpeg',
-        })),
-        voiceNote: voiceNote ? {
-          uri: voiceNote.uri,
-          duration: voiceNote.duration,
-          fileName: voiceNote.fileName,
-          createdAt: voiceNote.createdAt,
-        } : null,
-        createdAt: new Date(),
-      };
-
-      if (finalProjectId) {
-        taskData.projectId = finalProjectId;
-      }
-
-      await taskService.createTask(taskData);
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('Erreur', `Échec de la création de la tâche\n${error?.message || error}`);
-    }
   };
 
   const renderVoiceNote = () => {
