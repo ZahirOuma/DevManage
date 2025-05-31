@@ -19,7 +19,7 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { user } = useAuth();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -30,7 +30,6 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const user = await authService.login(email, password);
-        await login(user);
       navigation.replace('Home');
     } catch (error) {
       Alert.alert('Error', error.message);
