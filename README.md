@@ -1,99 +1,99 @@
-# Ballouq Project Manager
+# 📱 DevManage - Application de Gestion de Projets
 
-A React Native project management application built with Expo SDK 52, focusing on Agile-style project management with features like task tracking, file attachments, and team collaboration.
+## 🎯 À propos de l'application
 
-## Features
+DevManage est une application mobile moderne qui vous permet de gérer vos projets de développement de manière simple et efficace. Que vous soyez chef de projet ou membre d'une équipe, cette application vous aidera à organiser et suivre vos tâches quotidiennes.
 
-- Project and team creation
-- Task management with Kanban-style board
-- File attachments (documents, images)
-- Sprint timeline tracking
-- Audio/video notes for tasks
-- Push notifications
-- Real-time updates with Firebase
+## ✨ Fonctionnalités principales
 
-## Prerequisites
+### 📋 Gestion des projets
+- Créer et gérer vos projets
+- Ajouter des membres à vos projets
+- Suivre l'avancement des projets
+- Visualiser les statistiques de performance
 
-- Node.js (v14 or later)
-- npm or yarn
-- Expo CLI
-- Expo Go app on your mobile device
-- Firebase account
+### 👥 Gestion des équipes
+- Ajouter des membres à vos projets
+- Assigner des tâches aux membres
+- Suivre les responsabilités de chacun
+- Gérer les permissions
 
-## Installation
+### ✅ Gestion des tâches
+- Créer et assigner des tâches
+- Suivre l'état d'avancement
+- Filtrer et rechercher des tâches
+- Gérer les priorités
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd ballouq-project
-```
+## 📱 Comment utiliser l'application
 
-2. Install dependencies:
-```bash
-npm install
-```
+### 1. Connexion
+- Ouvrez l'application
+- Connectez-vous avec vos identifiants
+- Si vous n'avez pas de compte, créez-en un
 
-3. Configure Firebase:
-   - Create a new Firebase project
-   - Enable Authentication, Firestore, and Storage
-   - Update the Firebase configuration in `src/services/firebase.js`
+![Écran de Connexion](./screenshots/2.jpg)
 
-4. Start the development server:
-```bash
-npx expo start
-```
+![Écran de Création de Compte](./screenshots/3.jpg)
 
-5. Run on your device:
-   - Install Expo Go on your mobile device
-   - Scan the QR code from the terminal or Expo Dev Tools
+### 2. Créer un projet
+- Appuyez sur le bouton "+" en bas de l'écran
+- Remplissez les informations du projet
+- Ajoutez une description
+- Définissez la date de début et de fin
 
-## Project Structure
+### 3. Ajouter des membres
+- Dans votre projet, appuyez sur "Membres"
+- Cliquez sur "Ajouter un membre"
+- Sélectionnez les membres à ajouter
+- Définissez leurs rôles
 
-```
-src/
-  ├── components/     # Reusable UI components
-  ├── screens/        # Screen components
-  ├── services/       # Firebase and other services
-  ├── context/        # React Context providers
-  ├── hooks/          # Custom React hooks
-  ├── utils/          # Utility functions
-  ├── constants/      # Constants and configuration
-  └── assets/         # Images, fonts, etc.
-```
+### 4. Gérer les tâches
+- Dans votre projet, accédez à "Tâches"
+- Créez une nouvelle tâche
+- Assignez-la à un membre
+- Suivez son avancement
 
-## Available Scripts
+![Écran de Création de Tâche](./screenshots/5.jpg)
 
-- `npm start` - Start the Expo development server
-- `npm run android` - Run on Android device/emulator
-- `npm run ios` - Run on iOS simulator
-- `npm run web` - Run in web browser
+## 🎨 Interface utilisateur
 
-## Dependencies
+L'application dispose d'une interface moderne et intuitive :
+- Navigation simple entre les écrans
+- Design épuré et professionnel
+- Thème sombre et clair disponibles
+- Animations fluides
 
-- @react-navigation/native
-- @react-navigation/native-stack
-- @react-navigation/bottom-tabs
-- firebase
-- react-native-draggable-flatlist
-- expo-document-picker
-- expo-image-picker
-- expo-media-library
-- expo-notifications
-- react-native-reanimated
-- react-native-gesture-handler
+## 🖼️ Aperçu des écrans principaux
 
-## Contributing
+Voici un aperçu des différents écrans de l'application :
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Écran d'Accueil (Dashboard)
+Une vue rapide de vos statistiques et accès aux sections importantes.
 
-## License
+![Écran d'Accueil](./screenshots/1.jpg)
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Écran Mes Tâches
+Gérez et visualisez toutes vos tâches.
 
-## Support
+![Écran Mes Tâches](./screenshots/4.jpg)
 
-For support, email support@ballouq.com or create an issue in the repository. 
+### Écran Profil
+Gérez vos informations personnelles et les paramètres de l'application.
+
+![Écran Profil](./screenshots/6.jpg)
+
+## 🔒 Sécurité
+
+- Authentification sécurisée
+- Protection des données
+- Gestion des permissions
+- Sauvegarde automatique
+
+## 💡 Conseils d'utilisation
+
+- Utilisez les filtres pour trouver rapidement vos tâches
+- Consultez régulièrement le tableau de bord pour suivre l'avancement
+- N'hésitez pas à ajouter des descriptions détaillées aux tâches
+- Utilisez les notifications pour rester informé des mises à jour
+
+---
