@@ -31,9 +31,9 @@ DevManage est une application mobile moderne qui vous permet de gérer vos proje
 - Connectez-vous avec vos identifiants
 - Si vous n'avez pas de compte, créez-en un
 
-<img src="./screenshots/2.jpg" alt="Écran de Connexion" width="50"/>
+<img src="./screenshots/2.jpg" alt="Écran de Connexion" width="100"/>
 
-<img src="./screenshots/3.jpg" alt="Écran de Création de Compte" width="50"/>
+<img src="./screenshots/3.jpg" alt="Écran de Création de Compte" width="100"/>
 
 ### 2. Créer un projet
 - Appuyez sur le bouton "+" en bas de l'écran
@@ -53,7 +53,7 @@ DevManage est une application mobile moderne qui vous permet de gérer vos proje
 - Assignez-la à un membre
 - Suivez son avancement
 
-<img src="./screenshots/5.jpg" alt="Écran de Création de Tâche" width="50"/>
+<img src="./screenshots/5.jpg" alt="Écran de Création de Tâche" width="100"/>
 
 ## 🎨 Interface utilisateur
 
@@ -70,17 +70,17 @@ Voici un aperçu des différents écrans de l'application :
 ### Écran d'Accueil (Dashboard)
 Une vue rapide de vos statistiques et accès aux sections importantes.
 
-<img src="./screenshots/1.jpg" alt="Écran d'Accueil" width="50"/>
+<img src="./screenshots/1.jpg" alt="Écran d'Accueil" width="100"/>
 
 ### Écran Mes Tâches
 Gérez et visualisez toutes vos tâches.
 
-<img src="./screenshots/4.jpg" alt="Écran Mes Tâches" width="50"/>
+<img src="./screenshots/4.jpg" alt="Écran Mes Tâches" width="100"/>
 
 ### Écran Profil
 Gérez vos informations personnelles et les paramètres de l'application.
 
-<img src="./screenshots/6.jpg" alt="Écran Profil" width="50"/>
+<img src="./screenshots/6.jpg" alt="Écran Profil" width="100"/>
 
 ## 🔒 Sécurité
 
